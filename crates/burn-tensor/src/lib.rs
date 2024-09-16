@@ -11,6 +11,9 @@ extern crate derive_new;
 
 extern crate alloc;
 
+/// Server module.
+pub mod server;
+
 mod tensor;
 
 /// Burn Tensor representaton
