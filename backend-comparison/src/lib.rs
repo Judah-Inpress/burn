@@ -114,7 +114,7 @@ macro_rules! bench_on_backend {
             use burn::backend::candle::CandleDevice;
             use burn::backend::Candle;
 
-            let device = CandleDevice::Cuda(0);
+            let device = CandleDevice::cuda(0);
             bench::<Candle>(&device, feature_name, url, token);
         }
 
@@ -123,7 +123,7 @@ macro_rules! bench_on_backend {
             use burn::backend::candle::CandleDevice;
             use burn::backend::Candle;
 
-            let device = CandleDevice::Metal(0);
+            let device = CandleDevice::metal(0);
             bench::<Candle>(&device, feature_name, url, token);
         }
 
@@ -131,7 +131,7 @@ macro_rules! bench_on_backend {
         {
             use burn::backend::cuda_jit::{Cuda, CudaDevice};
 
-            bench::<Cuda>(&CudaDevice::default(), feature_name, url, token);
+            bench::<Cuda<half::f16>>(&CudaDevice::default(), feature_name, url, token);
         }
     };
 }

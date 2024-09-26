@@ -361,22 +361,21 @@ impl TensorData {
             DType::Bool => self.assert_eq_elem::<bool>(other),
             DType::QFloat(q) => {
                 // Strict or not, it doesn't make sense to compare quantized data to not quantized data for equality
-                if let DType::QFloat(q_other) = other.dtype {
-                    assert_eq!(
-                        q, q_other,
-                        "Quantization strategies differ ({:?} != {:?})",
-                        q, q_other
-                    )
+                let q_other = if let DType::QFloat(q_other) = other.dtype {
+                    q_other
                 } else {
                     panic!("Quantized data differs from other not quantized data")
-                }
-                match q {
-                    QuantizationStrategy::PerTensorAffineInt8(_) => {
-                        self.assert_eq_elem::<i8>(other)
-                    }
-                    QuantizationStrategy::PerTensorSymmetricInt8(_) => {
-                        self.assert_eq_elem::<i8>(other)
-                    }
+                };
+                match (q, q_other) {
+                    (
+                        QuantizationStrategy::PerTensorAffineInt8(_),
+                        QuantizationStrategy::PerTensorAffineInt8(_),
+                    ) => self.assert_eq_elem::<i8>(other),
+                    (
+                        QuantizationStrategy::PerTensorSymmetricInt8(_),
+                        QuantizationStrategy::PerTensorSymmetricInt8(_),
+                    ) => self.assert_eq_elem::<i8>(other),
+                    _ => panic!("Quantization strategies differ ({:?} != {:?})", q, q_other),
                 }
             }
         }
@@ -661,7 +660,7 @@ pub struct Data<E, const D: usize> {
     pub value: Vec<E>,
 
     /// The shape of the tensor.
-    pub shape: Shape<D>,
+    pub shape: Shape,
 }
 
 #[allow(deprecated)]
@@ -726,7 +725,7 @@ impl<E: Element> DataSerialize<E> {
 #[allow(deprecated)]
 impl<E: Element, const D: usize> Data<E, D> {
     /// Populates the data with random values.
-    pub fn random<R: RngCore>(shape: Shape<D>, distribution: Distribution, rng: &mut R) -> Self {
+    pub fn random<R: RngCore>(shape: Shape, distribution: Distribution, rng: &mut R) -> Self {
         let num_elements = shape.num_elements();
         let mut data = Vec::with_capacity(num_elements);
 
@@ -744,7 +743,7 @@ where
     E: Element,
 {
     /// Populates the data with zeros.
-    pub fn zeros<S: Into<Shape<D>>>(shape: S) -> Data<E, D> {
+    pub fn zeros<S: Into<Shape>>(shape: S) -> Data<E, D> {
         let shape = shape.into();
         let num_elements = shape.num_elements();
         let mut data = Vec::with_capacity(num_elements);
@@ -763,7 +762,7 @@ where
     E: Element,
 {
     /// Populates the data with ones.
-    pub fn ones(shape: Shape<D>) -> Data<E, D> {
+    pub fn ones(shape: Shape) -> Data<E, D> {
         let num_elements = shape.num_elements();
         let mut data = Vec::with_capacity(num_elements);
 
@@ -781,7 +780,7 @@ where
     E: Element,
 {
     /// Populates the data with the given value
-    pub fn full(shape: Shape<D>, fill_value: E) -> Data<E, D> {
+    pub fn full(shape: Shape, fill_value: E) -> Data<E, D> {
         let num_elements = shape.num_elements();
         let mut data = Vec::with_capacity(num_elements);
         for _ in 0..num_elements {
